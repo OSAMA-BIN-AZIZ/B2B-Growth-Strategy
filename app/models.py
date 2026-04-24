@@ -82,6 +82,9 @@ class MetricIn(BaseModel):
     article_id: int | None = None
     topic_title: str
     pain_point: str
+    target_customer: str | None = None
+    industry: str | None = None
+    growth_stage: str | None = None
     views: int = 0
     likes: int = 0
     shares: int = 0
@@ -98,15 +101,64 @@ class MetricSummary(BaseModel):
     feedback_boost: float
 
 
+class TopicRecommendation(BaseModel):
+    topic_title: str
+    pain_point: str
+    records: int
+    avg_views: float
+    avg_shares: float
+    avg_inquiries: float
+    suggestion_score: float
+
+
 class PublishDraftRequest(BaseModel):
     draft_id: int
+    idempotency_key: str | None = None
+    max_retries: int = 3
 
 
 class PublishJobOut(BaseModel):
     id: int
     draft_id: int
     channel: str
+    idempotency_key: str | None = None
     status: str
+    retry_count: int = 0
+    max_retries: int = 3
+    next_retry_at: str | None = None
     external_id: str | None = None
     message: str | None = None
     created_at: datetime
+
+
+class PublishAuditIn(BaseModel):
+    draft_id: int
+    action: Literal["reviewed", "approved", "rejected", "published"]
+    actor: str
+    note: str | None = None
+
+
+class AuditLogOut(BaseModel):
+    id: int
+    draft_id: int
+    action: str
+    actor: str
+    note: str | None = None
+    created_at: datetime
+
+
+class LLMLogOut(BaseModel):
+    id: int
+    model: str
+    operation: str
+    latency_ms: int
+    success: bool
+    error: str | None = None
+    created_at: datetime
+
+
+class RetryResult(BaseModel):
+    scanned: int
+    retried: int
+    succeeded: int
+    failed: int

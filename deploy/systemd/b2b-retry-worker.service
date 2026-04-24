@@ -1,0 +1,14 @@
+[Unit]
+Description=B2B Growth Retry Worker (WeChat publish retries)
+After=network.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/b2b-growth
+ExecStart=%h/b2b-growth/.venv/bin/python -m app.workers.retry_worker --limit 20 --delay-minutes 10
+
+# Optional: load env from project root
+EnvironmentFile=-%h/b2b-growth/.env
+
+[Install]
+WantedBy=multi-user.target

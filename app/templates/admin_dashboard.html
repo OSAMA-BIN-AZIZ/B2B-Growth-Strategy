@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>B2B Growth Admin</title>
+  <style>
+    body{font-family:Arial,sans-serif;margin:24px;background:#f7f8fa;color:#222}
+    h1{margin-bottom:8px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:12px}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th,td{border-bottom:1px solid #eee;padding:6px;text-align:left}
+  </style>
+</head>
+<body>
+  <h1>B2B 内容增长后台（MVP）</h1>
+  <p>查看发布任务、审核日志、LLM调用与选题推荐。</p>
+  <div class="grid">
+    <div class="card"><h3>发布任务</h3><table id="jobs"></table></div>
+    <div class="card"><h3>审核日志</h3><table id="audit"></table></div>
+    <div class="card"><h3>LLM日志</h3><table id="llm"></table></div>
+    <div class="card"><h3>Top选题</h3><table id="topics"></table></div>
+  </div>
+  <script>
+    const draw=(id,rows,cols)=>{const t=document.getElementById(id); if(!rows.length){t.innerHTML='<tr><td>暂无数据</td></tr>'; return;} t.innerHTML='<tr>'+cols.map(c=>`<th>${c}</th>`).join('')+'</tr>'+rows.map(r=>'<tr>'+cols.map(c=>`<td>${r[c]??''}</td>`).join('')+'</tr>').join('');};
+    Promise.all([
+      fetch('/api/publish/jobs?limit=10').then(r=>r.json()),
+      fetch('/api/publish/review-logs?limit=10').then(r=>r.json()),
+      fetch('/api/llm/logs?limit=10').then(r=>r.json()),
+      fetch('/api/metrics/topic-recommendations?top_n=10').then(r=>r.json()),
+    ]).then(([jobs,audit,llm,topics])=>{
+      draw('jobs',jobs,['id','status','retry_count','message']);
+      draw('audit',audit,['id','action','actor','note']);
+      draw('llm',llm,['id','model','operation','latency_ms','success']);
+      draw('topics',topics,['topic_title','pain_point','suggestion_score']);
+    });
+  </script>
+</body>
+</html>

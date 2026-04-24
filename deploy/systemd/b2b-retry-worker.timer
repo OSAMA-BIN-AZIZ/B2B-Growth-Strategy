@@ -1,0 +1,11 @@
+[Unit]
+Description=Run B2B Growth Retry Worker every 10 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=10min
+Unit=b2b-retry-worker.service
+Persistent=true
+
+[Install]
+WantedBy=timers.target
