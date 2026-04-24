@@ -18,16 +18,17 @@ CTA_OPTIONS = [
 ]
 
 
-def _score(index: int, req: TopicRequest) -> float:
+def _score(index: int, req: TopicRequest, pain: str, feedback_boost: dict[str, float] | None = None) -> float:
     pain_strength = 80 - index * 2
     conversion_fit = 75 + (5 if "询盘" in req.article_goal else 0)
     keyword_value = 70 + (8 if "B2B" in req.service.upper() else 0)
     differentiation = 72 - index
-    score = pain_strength * 0.3 + conversion_fit * 0.3 + keyword_value * 0.2 + differentiation * 0.2
+    feedback = (feedback_boost or {}).get(pain, 0.0)
+    score = pain_strength * 0.3 + conversion_fit * 0.3 + keyword_value * 0.2 + differentiation * 0.2 + feedback
     return round(min(99.0, score), 1)
 
 
-def generate_topics(req: TopicRequest) -> list[TopicCard]:
+def generate_topics(req: TopicRequest, feedback_boost: dict[str, float] | None = None) -> list[TopicCard]:
     topics: list[TopicCard] = []
     for i in range(10):
         pain = PAIN_OPTIONS[i % len(PAIN_OPTIONS)]
@@ -50,7 +51,7 @@ def generate_topics(req: TopicRequest) -> list[TopicCard]:
                 angle=angle,
                 conversion_goal=req.article_goal,
                 recommended_cta=cta,
-                score=_score(i, req),
+                score=_score(i, req, pain, feedback_boost),
             )
         )
-    return topics
+    return sorted(topics, key=lambda item: item.score, reverse=True)

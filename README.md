@@ -4,36 +4,40 @@
 
 ## MVP 范围
 
-当前版本已打通以下闭环：
+当前版本已打通并扩展以下闭环：
 
 1. 历史文章导入（内容资产库）
 2. 选题生成（10个选题卡 + 评分）
 3. 根据选题生成草稿（大纲 + Markdown正文 + 微信兼容HTML）
 4. 草稿持久化与预览读取
+5. **Metrics复盘与下一轮选题反馈加权**
+6. **微信草稿箱投递（先草稿、后人工发布）**
 
 > 设计原则：选题来自买家需求，文章服务询盘转化，草稿发布前人工审核。
 
 ## 技术栈
 
 - Python 3.10 / 3.11 / 3.13 / 3.14
-- FastAPI
-- SQLite（本地部署零依赖）
+- FastAPI（缺失依赖时自动使用兼容层，便于离线测试）
+- SQLite（本地）/ PostgreSQL（生产）
+- OpenAI API（可选，失败自动回退规则引擎）
 - Pytest
 
-## 目录结构
+## 环境变量
 
-```text
-app/
-  main.py                     # API入口
-  models.py                   # Pydantic模型
-  storage.py                  # SQLite存储
-  services/
-    topic_engine.py           # 选题引擎（评分公式）
-    writing_engine.py         # 写作引擎（大纲+正文+元信息）
-    formatter.py              # 微信HTML排版转换
-  templates/wechat/           # 微信模板目录（预留）
-prompts/                      # 提示词模板目录
-tests/
+```bash
+# 数据库（默认SQLite）
+DATABASE_URL=sqlite:///data/b2b_growth.db
+# 生产示例
+# DATABASE_URL=postgresql://user:password@host:5432/b2b_growth
+
+# OpenAI（可选）
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-4.1-mini
+
+# 微信草稿箱（可选）
+WECHAT_APPID=
+WECHAT_APPSECRET=
 ```
 
 ## 快速启动（本地）
@@ -68,46 +72,34 @@ uvicorn app.main:app --reload
 
 ## 核心 API
 
-### 健康检查
-
-- `GET /health`
-
 ### 文章库
 
 - `POST /api/articles/import` 导入历史文章
 - `GET /api/articles` 查询历史文章
 
-### 选题库
+### 选题与草稿
 
-- `POST /api/topics/generate`
+- `POST /api/topics/generate`（`use_openai=true`时优先模型推理）
+- `POST /api/drafts/from-topic`（失败自动回退规则写作）
+- `GET /api/drafts/{draft_id}`
 
-请求示例：
+### 发布管理（微信草稿）
 
-```json
-{
-  "target_customer": "外贸负责人",
-  "industry": "工业设备",
-  "service": "B2B独立站增长",
-  "article_goal": "提升询盘转化",
-  "growth_stage": "有流量没询盘",
-  "historical_reference": ["流量上涨但线索下降"]
-}
-```
+- `POST /api/publish/wechat/draft`
 
-### 草稿生成与预览
+### 数据复盘
 
-- `POST /api/drafts/from-topic` 根据选题卡生成草稿
-- `GET /api/drafts/{draft_id}` 获取草稿详情
+- `POST /api/metrics`
+- `GET /api/metrics/summary`
+
+## PostgreSQL 生产接入
+
+1. 安装 `psycopg`。
+2. 设置 `DATABASE_URL=postgresql://...`。
+3. 启动服务时自动建表（`articles / drafts / metrics / publish_jobs`）。
 
 ## 测试
 
 ```bash
 pytest
 ```
-
-## 后续迭代建议
-
-- 接入 PostgreSQL（生产环境）
-- 接入 OpenAI API（把规则引擎升级为模型推理）
-- 接入微信草稿箱 API（先草稿、后人工发布）
-- 新增 metrics 复盘与下一轮选题反馈
